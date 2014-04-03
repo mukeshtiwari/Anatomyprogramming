@@ -1,3 +1,4 @@
+open List
 
 type expr =
   | Number   of int
@@ -6,6 +7,7 @@ type expr =
   | Multiply of expr * expr
   | Divide   of expr * expr
   | Variable of string
+  | Declare  of string * expr * expr 
 
 let t =  Subtract ( ( Subtract ( Number 3, Number ( -2 ) ) ), Number ( -7 ) )
 
@@ -54,3 +56,23 @@ let renameOne ( var, newvar ) expr =
   in rename expr 
 
 let w = renameOne ( "x", "y" ) ( Add ( Variable "x", Number 2 ) )
+
+type env = ( string * int )  list
+
+let substitute env expr = 
+   let rec subst exp = 
+    match exp with
+    | Number i            -> Number i 
+    | Add      ( ef, es ) -> Add      ( subst ef, subst es )
+    | Subtract ( ef, es ) -> Subtract ( subst ef, subst es )
+    | Multiply ( ef, es ) -> Multiply ( subst ef, subst es )
+    | Divide   ( ef, es ) -> Divide   ( subst ef, subst es )
+    | Variable name -> match mem_assoc name env with
+		       | true  ->  Number ( assoc name env )
+		       | false ->  Variable name
+  in subst expr
+
+let w = substitute [ ( "x", 5 ) ; ( "y", 10 ) ] 
+           ( Add  ( Variable "x", Variable "y" )  )
+
+
