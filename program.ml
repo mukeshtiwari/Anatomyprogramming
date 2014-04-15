@@ -12,13 +12,14 @@ type expr =
 let t =  Subtract ( ( Subtract ( Number 3, Number ( -2 ) ) ), Number ( -7 ) )
 
 type token = 
-  | Digit of int
+  | Digit  of int
   | Symbol of string
 
 
 exception Zeroexception
 
-let rec evaluate  expr  = match expr with
+let rec evaluate  ( expr : expr ) : int  = 
+  match expr with
    | Number i            -> i 
    | Add      ( ef, es ) -> evaluate ef  + evaluate es 
    | Subtract ( ef, es ) -> evaluate ef  - evaluate es 
@@ -26,7 +27,7 @@ let rec evaluate  expr  = match expr with
    | Divide   ( ef, es ) -> evaluate ef  / evaluate es 
 	     
 
-let substituteOne ( var, value ) expr = 
+let substituteOne ( var  , value ) expr  = 
   let rec subst exp = 
     match exp with
     | Number i            -> Number i 
@@ -37,6 +38,13 @@ let substituteOne ( var, value ) expr =
     | Variable name -> if var = name 
 		       then Number value 
 		       else Variable name
+     | Declare ( x, exp', body ) -> 
+       let 
+	 body' = if x = var 
+		 then body 
+		 else subst body 
+       in Declare ( x, ( subst exp' ), body')
+      
   in subst expr
 
 
