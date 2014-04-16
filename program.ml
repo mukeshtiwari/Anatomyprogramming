@@ -1,5 +1,6 @@
 open List
 
+(*
 type expr =
   | Number   of int
   | Add      of expr * expr
@@ -14,20 +15,88 @@ let t =  Subtract ( ( Subtract ( Number 3, Number ( -2 ) ) ), Number ( -7 ) )
 type token = 
   | Digit  of int
   | Symbol of string
+ *)
 
+
+
+
+type value = 
+  | IntV of int
+  | BoolV of bool
+
+type env = ( string * value )  list
+
+type binaryop =
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | And
+  | Or
+  | GT
+  | LT
+  | LE
+  | GE
+  | EQ
+
+type unaryop = 
+  | Neg
+  | Not
+
+type exp =
+  | Literal of value
+  | Unary of unaryop * exp
+  | Binary of binaryop * exp * exp
+  | If of exp * exp * exp
+  | Variable of string
+  | Declare  of string * exp * exp 
 
 exception Zeroexception
 
-let rec evaluate  ( expr : expr ) : int  = 
+let rec evaluate  expr  env = 
   match expr with
-   | Number i            -> i 
-   | Add      ( ef, es ) -> evaluate ef  + evaluate es 
-   | Subtract ( ef, es ) -> evaluate ef  - evaluate es 
-   | Multiply ( ef, es ) -> evaluate ef  * evaluate es 
-   | Divide   ( ef, es ) -> evaluate ef  / evaluate es 
-	     
+   | Literal v            -> v 
+   | Unary  ( op, a )     -> unary op ( evaluate a env )
+   | Binary ( op, a, b )  -> binary op ( evaluate a env ) ( evaluate b env )
+   | Variable x           -> assoc x env
+   | Declare ( x, exp, body ) -> 
+      let
+	 newenv = ( x, evaluate exp env ) :: env 
+      in evaluate body newenv
+   | If ( a, b, c ) ->
+      let
+	 BoolV f = evaluate a env
+      in if f then evaluate b env
+	 else evaluate c env
+and 
 
-let substituteOne ( var  , value ) expr  = 
+unary op value = 
+  match ( op, value ) with 
+  | ( Not, BoolV b ) -> BoolV ( not b )
+  | ( Neg, IntV n ) -> IntV ( -n )
+
+and 
+
+binary op exp exp = 
+  match ( op, exp, exp ) with
+  | ( Add, IntV a, IntV b ) -> IntV ( a + b )
+  | ( Sub, IntV a, IntV b ) -> IntV ( a - b )
+  | ( Mul, IntV a, IntV b ) -> IntV ( a * b )
+  | ( Div, IntV a, IntV b ) -> IntV ( a / b )
+  | ( And, BoolV a, BoolV b ) -> BoolV ( a && b )
+  | ( Or,  BoolV a, BoolV b ) -> BoolV ( a || b )
+  | ( LT,  IntV a, IntV b ) -> BoolV ( a < b  )
+  | ( LE,  IntV a, IntV b ) -> BoolV ( a <= b )
+  | ( GE,  IntV a, IntV b ) -> BoolV ( a >= b )
+  | ( GT,  IntV a, IntV b ) -> BoolV ( a > b  )
+  | ( EQ,  IntV a, IntV b ) -> BoolV ( a = b  )
+
+
+let execute e = evaluate e []
+
+(*
+
+substitute_one ( var, value ) expr  = 
   let rec subst exp = 
     match exp with
     | Number i            -> Number i 
@@ -35,10 +104,10 @@ let substituteOne ( var  , value ) expr  =
     | Subtract ( ef, es ) -> Subtract ( subst ef, subst es )
     | Multiply ( ef, es ) -> Multiply ( subst ef, subst es )
     | Divide   ( ef, es ) -> Divide   ( subst ef, subst es )
-    | Variable name -> if var = name 
-		       then Number value 
-		       else Variable name
-     | Declare ( x, exp', body ) -> 
+    | Variable name       -> if var = name 
+		             then Number value 
+		             else Variable name
+    | Declare ( x, exp', body ) -> 
        let 
 	 body' = if x = var 
 		 then body 
@@ -48,9 +117,11 @@ let substituteOne ( var  , value ) expr  =
   in subst expr
 
 
-let w = substituteOne ( "x", 5 ) ( Add ( Variable "x", Number 2 ) )
 
-let renameOne ( var, newvar ) expr = 
+
+let w = substitute_one ( "x", 5 ) ( Add ( Variable "x", Number 2 ) )
+
+let rename_one ( var, newvar ) expr = 
   let rec rename exp = 
     match exp with
     | Number i            -> Number i
@@ -63,9 +134,9 @@ let renameOne ( var, newvar ) expr =
 		       else Variable name
   in rename expr 
 
-let w = renameOne ( "x", "y" ) ( Add ( Variable "x", Number 2 ) )
+let w = rename_one ( "x", "y" ) ( Add ( Variable "x", Number 2 ) )
 
-type env = ( string * int )  list
+
 
 let substitute env expr = 
    let rec subst exp = 
@@ -80,7 +151,10 @@ let substitute env expr =
 		       | false ->  Variable name
   in subst expr
 
-let w = substitute [ ( "x", 5 ) ; ( "y", 10 ) ] 
+let v = substitute [ ( "x", 5 ) ; ( "y", 10 ) ] 
            ( Add  ( Variable "x", Variable "y" )  )
 
 
+
+
+ *)
