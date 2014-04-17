@@ -18,15 +18,24 @@ type token =
  *)
 
 
+type exp =
+  | Literal of value
+  | Unary of unaryop * exp
+  | Binary of binaryop * exp * exp
+  | If of exp * exp * exp
+  | Variable of string
+  | Declare  of string * exp * exp 
+  | Function of string * exp
+  | Call of exp * exp
 
-
-type value = 
+and value = 
   | IntV of int
   | BoolV of bool
+  | ClosureV of string * exp * env 
 
-type env = ( string * value )  list
+and env = ( string * value )  list
 
-type binaryop =
+and binaryop =
   | Add
   | Sub
   | Mul
@@ -39,35 +48,47 @@ type binaryop =
   | GE
   | EQ
 
-type unaryop = 
+and unaryop = 
   | Neg
   | Not
 
-type exp =
-  | Literal of value
-  | Unary of unaryop * exp
-  | Binary of binaryop * exp * exp
-  | If of exp * exp * exp
-  | Variable of string
-  | Declare  of string * exp * exp 
+
+
+(*
+type funct =
+  | Function of ( string list ) * exp
+
+type funenv = ( string * funct ) list 
+type program = Program of funenv * exp 
+*)
+
 
 exception Zeroexception
 
-let rec evaluate  expr  env = 
+let rec evaluate  expr  env  = 
   match expr with
    | Literal v            -> v 
-   | Unary  ( op, a )     -> unary op ( evaluate a env )
-   | Binary ( op, a, b )  -> binary op ( evaluate a env ) ( evaluate b env )
+   | Unary  ( op, a )     -> unary op  ( evaluate a env )
+   | Binary ( op, a, b )  -> binary op ( evaluate a env ) 
+				       ( evaluate b env )
    | Variable x           -> assoc x env
    | Declare ( x, exp, body ) -> 
       let
 	 newenv = ( x, evaluate exp env ) :: env 
-      in evaluate body newenv
+      in evaluate body newenv 
    | If ( a, b, c ) ->
       let
 	 BoolV f = evaluate a env
       in if f then evaluate b env
 	 else evaluate c env
+   | Function ( x, body ) -> ClosureV ( x, body, env )
+   | Call ( func, arg ) -> 
+      let
+	ClosureV ( x, body, cloenv ) = evaluate func env
+      in let
+	newenv = ( x, evaluate arg env ) :: cloenv
+      in evaluate body newenv
+
 and 
 
 unary op value = 
@@ -92,7 +113,7 @@ binary op exp exp =
   | ( EQ,  IntV a, IntV b ) -> BoolV ( a = b  )
 
 
-let execute e = evaluate e []
+
 
 (*
 
