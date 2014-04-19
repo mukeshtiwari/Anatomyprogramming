@@ -117,32 +117,15 @@ type typ =
 
 type tenv = ( string * typ )  list
 
-
-let typecheck exp tenv = 
-    match exp with
-    | Literal ( IntV _  ) -> TInt
-    | Literal ( BoolV _ ) -> TBool
-    | Unary   ( op, a )   -> check_unary op ( typecheck a tenv )
-    | Binary  ( op, a, b) -> check_binary op ( typecheck a tenv ) ( typecheck b tenv)
-    | Variable x          -> assoc x tenv
-    | Declare ( x, exp, body ) ->
-       let
-	  newenv = ( x, typecheck exp tenv ) :: env
-       in typecheck body newenv
-    | If (a, b, c ) ->
-      if TBool = typecheck a tenv then 
-	if typecheck b tenv = typecheck c tenv then
-	   typecheck b tenv
-	else TBool
-      else TBool					 
-
-and check_unary op typ = 
+exception TypeMismatch
+let check_unary op typ = 
   match ( op, typ ) with
   | ( Not, TBool ) -> TBool
   | ( Neg, TInt  ) -> TInt
- 
+  | ( op, a ) -> raise TypeMismatch
 
-and check_binary op tyone tytwo = 
+exception MismatchBinarytypes 
+let check_binary op tyone tytwo = 
   match ( op, tyone, tytwo ) with
   | ( Add, TInt, TInt ) -> TInt
   | ( Sub, TInt, TInt ) -> TInt
@@ -152,6 +135,33 @@ and check_binary op tyone tytwo =
   | ( Or,  TBool, TBool ) -> TBool
   | ( LT, TInt, TInt ) -> TBool
   | ( GT, TInt, TInt ) -> TBool
+  | ( LE, TInt, TInt ) -> TBool
+  | ( GE, TInt, TInt ) -> TBool
+  | ( EQ, TInt, TInt ) -> TBool
+  | ( EQ, TBool, TBool ) -> TBool
+  | ( op, a, b ) -> raise  MismatchBinarytypes
+
+exception TypeMismatch
+let rec typecheck exp tenv = 
+    match exp with
+    | Literal ( IntV _  ) -> TInt
+    | Literal ( BoolV _ ) -> TBool
+    | Unary   ( op, a )   -> check_unary op ( typecheck a tenv )
+    | Binary  ( op, a, b) -> check_binary op ( typecheck a tenv ) ( typecheck b tenv)
+    | Variable x          -> assoc x tenv
+    | Declare ( x, exp, body ) ->
+       let
+	  newenv = ( x, typecheck exp tenv ) :: tenv
+       in typecheck body newenv
+    | If (a, b, c ) ->
+      if TBool = typecheck a tenv then 
+	if typecheck b tenv = typecheck c tenv then
+	   typecheck b tenv
+	else raise TypeMismatch
+      else raise TypeMismatch				 
+
+
+
 
 
 (*
