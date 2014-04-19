@@ -89,16 +89,12 @@ let rec evaluate  expr  env  =
 	newenv = ( x, evaluate arg env ) :: cloenv
       in evaluate body newenv
 
-and 
-
-unary op value = 
+and unary op value = 
   match ( op, value ) with 
   | ( Not, BoolV b ) -> BoolV ( not b )
   | ( Neg, IntV n ) -> IntV ( -n )
 
-and 
-
-binary op exp exp = 
+and binary op exp exp = 
   match ( op, exp, exp ) with
   | ( Add, IntV a, IntV b ) -> IntV ( a + b )
   | ( Sub, IntV a, IntV b ) -> IntV ( a - b )
@@ -113,6 +109,49 @@ binary op exp exp =
   | ( EQ,  IntV a, IntV b ) -> BoolV ( a = b  )
 
 
+
+type typ = 
+  | TInt
+  | TBool
+ 
+
+type tenv = ( string * typ )  list
+
+
+let typecheck exp tenv = 
+    match exp with
+    | Literal ( IntV _  ) -> TInt
+    | Literal ( BoolV _ ) -> TBool
+    | Unary   ( op, a )   -> check_unary op ( typecheck a tenv )
+    | Binary  ( op, a, b) -> check_binary op ( typecheck a tenv ) ( typecheck b tenv)
+    | Variable x          -> assoc x tenv
+    | Declare ( x, exp, body ) ->
+       let
+	  newenv = ( x, typecheck exp tenv ) :: env
+       in typecheck body newenv
+    | If (a, b, c ) ->
+      if TBool = typecheck a tenv then 
+	if typecheck b tenv = typecheck c tenv then
+	   typecheck b tenv
+	else TBool
+      else TBool					 
+
+and check_unary op typ = 
+  match ( op, typ ) with
+  | ( Not, TBool ) -> TBool
+  | ( Neg, TInt  ) -> TInt
+ 
+
+and check_binary op tyone tytwo = 
+  match ( op, tyone, tytwo ) with
+  | ( Add, TInt, TInt ) -> TInt
+  | ( Sub, TInt, TInt ) -> TInt
+  | ( Mul, TInt, TInt ) -> TInt
+  | ( Div, TInt, TInt ) -> TInt
+  | ( And, TBool, TBool ) -> TBool
+  | ( Or,  TBool, TBool ) -> TBool
+  | ( LT, TInt, TInt ) -> TBool
+  | ( GT, TInt, TInt ) -> TBool
 
 
 (*
