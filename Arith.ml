@@ -55,7 +55,7 @@ let rec rename : exp -> exp = function
 | Var_e v ->  Var_e v
 | Op_e(e1, o, e2) -> Op_e(rename e1, o, rename e2)
 | Let_e(v, e1, e2) -> 
-   let fv = (free_var e2) in  (* I am assuming here that v does not appear in e2. *)
+   let fv = (free_var e2) in  (* I am assuming here that v does not appear in e1. *)
    let r = string_of_int (1+ (Random.int 999999)) in 
    if SS.mem v fv then 
      Let_e(v ^ r, rename e1, rename (replace v (v ^ r) e2)) 
